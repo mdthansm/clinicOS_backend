@@ -54,10 +54,12 @@ if (isProduction) {
   }
 }
 
-// Validate required environment variables
-if (!process.env.SMTP_EMAIL || !process.env.SMTP_APP_PASSWORD) {
+// Validate required environment variables (warn but don't exit - allows diagnostic endpoint)
+const hasSMTPCredentials = !!(process.env.SMTP_EMAIL && process.env.SMTP_APP_PASSWORD);
+
+if (!hasSMTPCredentials) {
   console.error('');
-  console.error('❌ CRITICAL ERROR: Missing required environment variables!');
+  console.error('⚠️ WARNING: Missing required environment variables!');
   console.error('');
   
   if (isProduction) {
@@ -71,7 +73,10 @@ if (!process.env.SMTP_EMAIL || !process.env.SMTP_APP_PASSWORD) {
     console.error('  1. Go to your service dashboard');
     console.error('  2. Navigate to "Environment" tab');
     console.error('  3. Add SMTP_EMAIL and SMTP_APP_PASSWORD variables');
-    console.error('  4. Redeploy your service');
+    console.error('  4. Click "Save Changes"');
+    console.error('  5. Manually redeploy: "Manual Deploy" → "Deploy latest commit"');
+    console.error('');
+    console.error('⚠️ Server will start but OTP functionality will not work until credentials are set!');
   } else {
     console.error('Development environment: Please ensure your .env file contains:');
     console.error('  SMTP_EMAIL=your-email@gmail.com');
@@ -85,7 +90,8 @@ if (!process.env.SMTP_EMAIL || !process.env.SMTP_APP_PASSWORD) {
   console.error('3. Go to App Passwords');
   console.error('4. Generate a new app password for "Mail"');
   console.error('');
-  process.exit(1);
+} else {
+  console.log('✅ SMTP credentials found');
 }
 
 const app = express();
@@ -180,34 +186,41 @@ async function startServer() {
   try {
     console.log('\n🚀 Starting ClinicOS Backend...\n');
     
-    // Test email connection on startup
-    console.log('📧 Testing email service...');
-    const emailService = new EmailService();
-    const emailConnection = await emailService.testConnection();
-    
-    if (!emailConnection) {
-      console.error('\n❌ CRITICAL: Email service connection failed!');
-      if (isProduction) {
-        console.error('❌ Please check your SMTP credentials in your hosting platform\'s environment variables\n');
-      } else {
-        console.error('❌ Please check your SMTP credentials in .env file\n');
+    // Test email connection on startup only if credentials are available
+    if (hasSMTPCredentials) {
+      console.log('📧 Testing email service...');
+      const emailService = new EmailService();
+      const emailConnection = await emailService.testConnection();
+      
+      if (!emailConnection) {
+        console.error('\n❌ CRITICAL: Email service connection failed!');
+        if (isProduction) {
+          console.error('❌ Please check your SMTP credentials in your hosting platform\'s environment variables\n');
+        } else {
+          console.error('❌ Please check your SMTP credentials in .env file\n');
+        }
+        process.exit(1);
       }
-      process.exit(1);
+      
+      console.log('✅ Email service connection successful');
+    } else {
+      console.warn('⚠️ Skipping email service test - SMTP credentials not configured');
     }
 
     app.listen(PORT, () => {
       console.log('\n✅ ClinicOS Backend started successfully!\n');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log(`📡 Server:        http://localhost:${PORT}`);
-      console.log(`📧 Email Service: ${emailConnection ? '✅ Connected' : '❌ Failed'}`);
+      console.log(`📧 Email Service: ${hasSMTPCredentials ? '✅ Configured' : '❌ Not Configured'}`);
       console.log(`🌍 Environment:   ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📬 SMTP Email:    ${process.env.SMTP_EMAIL}`);
+      console.log(`📬 SMTP Email:    ${process.env.SMTP_EMAIL || 'Not Set'}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('\n📋 Available endpoints:');
       console.log(`  POST http://localhost:${PORT}/api/otp/send`);
       console.log(`  POST http://localhost:${PORT}/api/otp/verify`);
       console.log(`  GET  http://localhost:${PORT}/api/otp/health`);
       console.log(`  GET  http://localhost:${PORT}/health`);
+      console.log(`  GET  http://localhost:${PORT}/env-check`);
       console.log('\n✨ Ready to accept requests!\n');
     });
 
