@@ -25,8 +25,8 @@ git push -u origin main
 4. Configure:
    - **Name**: `clinic-os-backend`
    - **Environment**: `Node`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
+   - **Build Command**: `yarn install` (or `npm install` - build runs automatically via postinstall script)
+   - **Start Command**: `npm start` (or `yarn start`)
    - **Port**: `3001` (or your configured port)
 
 5. Add Environment Variables:

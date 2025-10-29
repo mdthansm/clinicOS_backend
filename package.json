@@ -8,7 +8,8 @@
         "start": "node dist/server.js",
         "dev": "ts-node src/server.ts",
         "watch": "ts-node --watch src/server.ts",
-        "test-smtp": "ts-node src/test-smtp.ts"
+        "test-smtp": "ts-node src/test-smtp.ts",
+        "postinstall": "npm run build"
     },
     "dependencies": {
         "cors": "^2.8.5",
