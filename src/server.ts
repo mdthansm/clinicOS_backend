@@ -34,10 +34,15 @@ if (!isProduction) {
   dotenv.config({ path: envPath, override: false });
 }
 
+// Trim and validate credentials FIRST (before using them)
+const smtpEmail = process.env.SMTP_EMAIL?.trim();
+const smtpPassword = process.env.SMTP_APP_PASSWORD?.trim().replace(/\s/g, '');
+const hasSMTPCredentials = !!(smtpEmail && smtpPassword);
+
 // Debug environment variables (without showing sensitive data)
 console.log('🔍 Environment check:');
-console.log('  SMTP_EMAIL:', process.env.SMTP_EMAIL || '❌ NOT SET');
-console.log('  SMTP_APP_PASSWORD:', process.env.SMTP_APP_PASSWORD ? '✅ SET (***hidden***)' : '❌ NOT SET');
+console.log('  SMTP_EMAIL:', smtpEmail || '❌ NOT SET');
+console.log('  SMTP_APP_PASSWORD:', smtpPassword ? `✅ SET (${smtpPassword.length} chars, ***hidden***)` : '❌ NOT SET');
 console.log('  PORT:', process.env.PORT || '3001 (default)');
 console.log('  NODE_ENV:', process.env.NODE_ENV || 'development (default)');
 
@@ -53,9 +58,6 @@ if (isProduction) {
     console.log('  ⚠️ No SMTP-related environment variables found');
   }
 }
-
-// Validate required environment variables (warn but don't exit - allows diagnostic endpoint)
-const hasSMTPCredentials = !!(process.env.SMTP_EMAIL && process.env.SMTP_APP_PASSWORD);
 
 if (!hasSMTPCredentials) {
   console.error('');
@@ -209,11 +211,25 @@ async function startServer() {
 
     app.listen(PORT, () => {
       console.log('\n✅ ClinicOS Backend started successfully!\n');
+      // Get local network IP for mobile access
+      const os = require('os');
+      const networkInterfaces = os.networkInterfaces();
+      let localIP = 'localhost';
+      for (const interfaceName in networkInterfaces) {
+        for (const iface of networkInterfaces[interfaceName] || []) {
+          if (iface.family === 'IPv4' && !iface.internal) {
+            localIP = iface.address;
+            break;
+          }
+        }
+      }
+
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`📡 Server:        http://localhost:${PORT}`);
-      console.log(`📧 Email Service: ${hasSMTPCredentials ? '✅ Configured' : '❌ Not Configured'}`);
-      console.log(`🌍 Environment:   ${process.env.NODE_ENV || 'development'}`);
-      console.log(`📬 SMTP Email:    ${process.env.SMTP_EMAIL || 'Not Set'}`);
+      console.log(`📡 Server (Local):    http://localhost:${PORT}`);
+      console.log(`📡 Server (Network):  http://${localIP}:${PORT}`);
+      console.log(`📧 Email Service:     ${hasSMTPCredentials ? '✅ Configured' : '❌ Not Configured'}`);
+      console.log(`🌍 Environment:       ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📬 SMTP Email:        ${smtpEmail || 'Not Set'}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('\n📋 Available endpoints:');
       console.log(`  POST http://localhost:${PORT}/api/otp/send`);

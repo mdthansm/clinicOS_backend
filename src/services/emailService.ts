@@ -11,8 +11,8 @@ export class EmailService {
       port: 465,
       secure: true, // true for 465 (SSL), false for other ports
       auth: { 
-        user: process.env.SMTP_EMAIL, 
-        pass: process.env.SMTP_APP_PASSWORD 
+        user: process.env.SMTP_EMAIL?.trim(), 
+        pass: process.env.SMTP_APP_PASSWORD?.trim().replace(/\s/g, '') // Remove all spaces from app password
       },
       logger: true, // Enable logging
       debug: true   // Enable debug output
@@ -33,12 +33,14 @@ export class EmailService {
   async sendOTPEmail(email: string, otp: string): Promise<{ success: boolean; message: string }> {
     try {
       console.log('📧 Attempting to send OTP to:', email);
+      const trimmedEmail = process.env.SMTP_EMAIL?.trim();
+      const trimmedPassword = process.env.SMTP_APP_PASSWORD?.trim().replace(/\s/g, '');
       console.log('📧 SMTP Config:', {
         host: 'smtp.gmail.com',
         port: 465,
         secure: true,
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_APP_PASSWORD ? '***configured***' : 'NOT_SET'
+        user: trimmedEmail,
+        pass: trimmedPassword ? `***configured (${trimmedPassword.length} chars)***` : 'NOT_SET'
       });
 
       // Verify transporter configuration first
@@ -73,7 +75,7 @@ export class EmailService {
       const info = await this.transporter.sendMail({
         from: {
           name: 'ClinicOS',
-          address: process.env.SMTP_EMAIL || '',
+          address: process.env.SMTP_EMAIL?.trim() || '',
         },
         to: email,
         subject: '🔐 Your ClinicOS Login OTP',
@@ -118,11 +120,13 @@ export class EmailService {
   async testConnection(): Promise<boolean> {
     try {
       console.log('🔍 Testing SMTP connection...');
+      const trimmedEmail = process.env.SMTP_EMAIL?.trim();
+      const trimmedPassword = process.env.SMTP_APP_PASSWORD?.trim().replace(/\s/g, '');
       console.log('📧 Config:', {
         host: 'smtp.gmail.com',
         port: 465,
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_APP_PASSWORD ? '***configured***' : 'NOT_SET'
+        user: trimmedEmail,
+        pass: trimmedPassword ? `***configured (${trimmedPassword.length} chars)***` : 'NOT_SET'
       });
       
       await this.transporter.verify();

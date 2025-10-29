@@ -49,9 +49,10 @@ router.post('/send', async (req: Request, res: Response) => {
       console.log(`✅ OTP sent to ${email}: ${otp}`);
       res.json(response);
     } else {
+      console.error(`❌ Failed to send OTP to ${email}: ${emailResult.message}`);
       res.status(500).json({
         success: false,
-        message: emailResult.message || 'Failed to send OTP email'
+        message: emailResult.message || 'Failed to send OTP email. Please check server logs for details.'
       });
     }
 
