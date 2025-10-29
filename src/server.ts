@@ -1,19 +1,32 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import otpRoutes from './routes/otpRoutes';
 import { EmailService } from './services/emailService';
 
 // Load environment variables FIRST
+// Only load .env file in development or if the file exists
+const isProduction = process.env.NODE_ENV === 'production';
 const envPath = path.join(__dirname, '../.env');
-console.log('🔧 Loading environment from:', envPath);
-const envResult = dotenv.config({ path: envPath });
 
-if (envResult.error) {
-  console.error('❌ Error loading .env file:', envResult.error);
+if (!isProduction) {
+  // In development, try to load .env file
+  console.log('🔧 Loading environment from:', envPath);
+  if (fs.existsSync(envPath)) {
+    const envResult = dotenv.config({ path: envPath });
+    if (envResult.error) {
+      console.warn('⚠️ Warning: Error loading .env file:', envResult.error.message);
+    } else {
+      console.log('✅ .env file loaded successfully');
+    }
+  } else {
+    console.log('⚠️ .env file not found, using system environment variables');
+  }
 } else {
-  console.log('✅ .env file loaded successfully');
+  // In production, use system environment variables (set by hosting platform)
+  console.log('🔧 Production mode: Using system environment variables');
 }
 
 // Debug environment variables (without showing sensitive data)
@@ -28,9 +41,25 @@ if (!process.env.SMTP_EMAIL || !process.env.SMTP_APP_PASSWORD) {
   console.error('');
   console.error('❌ CRITICAL ERROR: Missing required environment variables!');
   console.error('');
-  console.error('Please ensure your .env file contains:');
-  console.error('  SMTP_EMAIL=your-email@gmail.com');
-  console.error('  SMTP_APP_PASSWORD=your-16-char-app-password');
+  
+  if (isProduction) {
+    console.error('Production environment detected. Please set the following environment variables');
+    console.error('in your hosting platform\'s dashboard (Render/Railway/etc.):');
+    console.error('');
+    console.error('  SMTP_EMAIL=your-email@gmail.com');
+    console.error('  SMTP_APP_PASSWORD=your-16-char-app-password');
+    console.error('');
+    console.error('For Render:');
+    console.error('  1. Go to your service dashboard');
+    console.error('  2. Navigate to "Environment" tab');
+    console.error('  3. Add SMTP_EMAIL and SMTP_APP_PASSWORD variables');
+    console.error('  4. Redeploy your service');
+  } else {
+    console.error('Development environment: Please ensure your .env file contains:');
+    console.error('  SMTP_EMAIL=your-email@gmail.com');
+    console.error('  SMTP_APP_PASSWORD=your-16-char-app-password');
+  }
+  
   console.error('');
   console.error('To generate an App Password:');
   console.error('1. Go to https://myaccount.google.com/security');
@@ -140,7 +169,11 @@ async function startServer() {
     
     if (!emailConnection) {
       console.error('\n❌ CRITICAL: Email service connection failed!');
-      console.error('❌ Please check your SMTP credentials in .env file\n');
+      if (isProduction) {
+        console.error('❌ Please check your SMTP credentials in your hosting platform\'s environment variables\n');
+      } else {
+        console.error('❌ Please check your SMTP credentials in .env file\n');
+      }
       process.exit(1);
     }
 
