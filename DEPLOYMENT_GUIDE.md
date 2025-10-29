@@ -29,15 +29,31 @@ git push -u origin main
    - **Start Command**: `npm start` (or `yarn start`)
    - **Port**: `3001` (or your configured port)
 
-5. Add Environment Variables:
-   - `SMTP_EMAIL`: Your Gmail address
-   - `SMTP_APP_PASSWORD`: Your Gmail app password (16 characters)
-   - `PORT`: `3001`
-   - `NODE_ENV`: `production`
+5. **IMPORTANT: Add Environment Variables BEFORE creating the service:**
+   
+   **OR if service already exists:**
+   - Go to your service dashboard
+   - Click on "Environment" in the left sidebar
+   - Click "Add Environment Variable" for each variable
+   
+   **Required Environment Variables:**
+   - **Key**: `SMTP_EMAIL` → **Value**: `your-email@gmail.com`
+   - **Key**: `SMTP_APP_PASSWORD` → **Value**: `your-16-char-app-password`
+   - **Key**: `NODE_ENV` → **Value**: `production`
+   - **Key**: `PORT` → **Value**: Leave empty (Render sets this automatically) or `10000`
+   
+   **⚠️ CRITICAL TIPS:**
+   - No spaces around the `=` sign in Render
+   - No quotes needed around values
+   - Case-sensitive: Use exactly `SMTP_EMAIL` and `SMTP_APP_PASSWORD`
+   - After adding/updating environment variables, you MUST manually trigger a redeploy
+   - Click "Save Changes" after adding each variable
 
-6. Click "Create Web Service"
-7. Wait for deployment (about 5-10 minutes)
-8. Copy your service URL (e.g., `https://clinic-os-backend.onrender.com`)
+6. Click "Create Web Service" (or "Save Changes" if updating)
+7. **Manually trigger redeploy** (if you added env vars after creation):
+   - Go to "Manual Deploy" → "Deploy latest commit"
+8. Wait for deployment (about 5-10 minutes)
+9. Copy your service URL (e.g., `https://clinic-os-backend.onrender.com`)
 
 ### Step 3: Update Frontend Config
 
@@ -100,6 +116,34 @@ Expected response:
 
 ## Troubleshooting
 
+### Issue: Environment variables not found / "SMTP_EMAIL: ❌ NOT SET"
+**This is the most common issue!** Follow these steps:
+
+1. **Verify variables are set in Render:**
+   - Go to your Render service dashboard
+   - Click "Environment" in the left sidebar
+   - Check that `SMTP_EMAIL` and `SMTP_APP_PASSWORD` are listed
+   - Verify spelling (case-sensitive, no typos)
+
+2. **Check variable values:**
+   - Click on each variable to edit and verify the value is correct
+   - For `SMTP_EMAIL`: Should be your full Gmail address (e.g., `yourname@gmail.com`)
+   - For `SMTP_APP_PASSWORD`: Should be exactly 16 characters, no spaces or quotes
+
+3. **After adding/updating variables, manually redeploy:**
+   - Render does NOT automatically redeploy when you add environment variables
+   - Go to "Manual Deploy" → "Deploy latest commit"
+   - OR click "Events" → "Deploy latest commit"
+
+4. **Verify variable names are exact:**
+   - ✅ Correct: `SMTP_EMAIL`, `SMTP_APP_PASSWORD`
+   - ❌ Wrong: `SMTP_Email`, `SMTP_APP_PASS`, `smtp_email`, `SMTPEMAIL`
+
+5. **Check deployment logs:**
+   - After redeploy, check the logs
+   - Look for the "🔍 Environment check:" section
+   - If still showing "❌ NOT SET", the variables aren't being passed to the service
+
 ### Issue: "Network request failed" in client app
 **Solution**: Check that `ENVIRONMENT` is set to `'production'` and `PROD_URL` is correct in your client app configuration.
 
@@ -107,7 +151,7 @@ Expected response:
 **Solution**: Check your backend logs for missing environment variables or SMTP configuration issues.
 
 ### Issue: OTP emails not sent
-**Solution**: Verify that `SMTP_EMAIL` and `SMTP_APP_PASSWORD` are set correctly in your deployment environment.
+**Solution**: Verify that `SMTP_EMAIL` and `SMTP_APP_PASSWORD` are set correctly in your deployment environment. Check the deployment logs for SMTP connection errors.
 
 ### Issue: Backend times out
 **Solution**: Render free tier instances sleep after 15 minutes of inactivity. Consider upgrading or use Railway/Render paid tier.

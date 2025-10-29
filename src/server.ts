@@ -23,10 +23,15 @@ if (!isProduction) {
     }
   } else {
     console.log('⚠️ .env file not found, using system environment variables');
+    // Try loading from default location as fallback
+    dotenv.config(); // This won't error if .env doesn't exist
   }
 } else {
   // In production, use system environment variables (set by hosting platform)
   console.log('🔧 Production mode: Using system environment variables');
+  // In production, also try loading .env as a fallback (useful for troubleshooting)
+  // This won't override existing env vars, only fills in missing ones
+  dotenv.config({ path: envPath, override: false });
 }
 
 // Debug environment variables (without showing sensitive data)
@@ -35,6 +40,19 @@ console.log('  SMTP_EMAIL:', process.env.SMTP_EMAIL || '❌ NOT SET');
 console.log('  SMTP_APP_PASSWORD:', process.env.SMTP_APP_PASSWORD ? '✅ SET (***hidden***)' : '❌ NOT SET');
 console.log('  PORT:', process.env.PORT || '3001 (default)');
 console.log('  NODE_ENV:', process.env.NODE_ENV || 'development (default)');
+
+// Additional debugging for production
+if (isProduction) {
+  console.log('\n🔍 Debug: Checking all environment variable keys...');
+  const envKeys = Object.keys(process.env).filter(key => 
+    key.includes('SMTP') || key.includes('EMAIL') || key === 'PORT' || key === 'NODE_ENV'
+  );
+  if (envKeys.length > 0) {
+    console.log('  Found environment keys:', envKeys.join(', '));
+  } else {
+    console.log('  ⚠️ No SMTP-related environment variables found');
+  }
+}
 
 // Validate required environment variables
 if (!process.env.SMTP_EMAIL || !process.env.SMTP_APP_PASSWORD) {
